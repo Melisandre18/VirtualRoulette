@@ -1,0 +1,14 @@
+# Rider / IntelliJ
+.idea/
+
+# .NET
+**/bin/
+**/obj/
+
+# User-specific
+*.user
+*.suo
+
+# OS
+Thumbs.db
+.DS_Store
