@@ -1,10 +1,26 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using VirtualRouletteApi.Data;
+using VirtualRouletteApi.Domain;
+using VirtualRouletteApi.Extensions;
+using VirtualRouletteApi.Services.Auth;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+// EF Core + PostgreSQL
+builder.Services.AddDbContext<AppDbContext>(opts =>
+    opts.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
+
+// Password hashing
+builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
+
+// Basic authentication + authorization
+builder.Services.AddAppAuthentication(builder.Configuration);
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
 
@@ -15,7 +31,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
