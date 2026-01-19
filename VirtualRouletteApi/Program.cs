@@ -4,6 +4,7 @@ using VirtualRouletteApi.Data;
 using VirtualRouletteApi.Domain;
 using VirtualRouletteApi.Extensions;
 using VirtualRouletteApi.Services.Auth;
+using VirtualRouletteApi.Services.Balance;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,9 @@ builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 // Basic authentication + authorization
 builder.Services.AddAppAuthentication(builder.Configuration);
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+//Balance
+builder.Services.AddScoped<IBalanceService, BalanceService>();
 
 var app = builder.Build();
 
