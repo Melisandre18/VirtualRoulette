@@ -1,0 +1,20 @@
+﻿using Microsoft.EntityFrameworkCore;
+using VirtualRouletteApi.Domain;
+
+namespace VirtualRouletteApi.Data;
+
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+{
+    public DbSet<User> Users => Set<User>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.UserName)
+            .IsUnique();
+
+        modelBuilder.Entity<User>()
+            .Property(u => u.UserName)
+            .HasMaxLength(64);
+    }
+}
