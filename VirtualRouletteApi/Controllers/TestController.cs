@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace VirtualRouletteApi.Controllers
@@ -15,6 +16,17 @@ namespace VirtualRouletteApi.Controllers
             {
                 Name = User.Identity?.Name,
                 Claims = User.Claims.Select(c => new { c.Type, c.Value })
+            });
+        }
+        
+        [Authorize]
+        [HttpGet("me")]
+        public IActionResult Me()
+        {
+            return Ok(new
+            {
+                Id = User.FindFirstValue(ClaimTypes.NameIdentifier),
+                UserName = User.Identity?.Name
             });
         }
     }
