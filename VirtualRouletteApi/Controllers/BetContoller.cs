@@ -27,4 +27,11 @@ public class BetController(IBetService bets) : ControllerBase
 
         return Ok(result);
     }
+    
+    [HttpGet("history")]
+    public async Task<ActionResult<IReadOnlyList<BetHistory>>> GetHistory([FromQuery] CancellationToken ct, int take = 50)
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        return Ok(await bets.GetHistoryAsync(userId, take, ct));
+    }
 }

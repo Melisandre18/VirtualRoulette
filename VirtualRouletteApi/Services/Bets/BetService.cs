@@ -49,4 +49,23 @@ public class BetService(AppDbContext db, IRouletteService roulette) : IBetServic
 
         return new BetResponse("accepted", bet.Id, winningNumber, winAmount);
     }
+    
+    public async Task<IReadOnlyList<BetHistory>> GetHistoryAsync(Guid userId, int take, CancellationToken ct)
+    {
+        if (take <= 0) take = 10;
+        if (take > 100) take = 100;
+
+        return await db.Bets
+            .AsNoTracking()
+            .Where(b => b.UserId == userId)
+            .OrderByDescending(b => b.CreatedAt)
+            .Select(b => new BetHistory(
+                b.Id,
+                b.BetAmount,
+                b.WinAmount,
+                b.CreatedAt
+            ))
+            .Take(take)
+            .ToListAsync(ct);
+    }
 }
