@@ -5,6 +5,7 @@ using VirtualRouletteApi.Domain;
 using VirtualRouletteApi.Extensions;
 using VirtualRouletteApi.Services.Auth;
 using VirtualRouletteApi.Services.Balance;
+using VirtualRouletteApi.Services.Roulette;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,8 +24,11 @@ builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddAppAuthentication(builder.Configuration);
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-//Balance
+//Balance, Deposit, Withdraw
 builder.Services.AddScoped<IBalanceService, BalanceService>();
+
+//Betting
+builder.Services.AddSingleton<IRouletteService, RouletteService>();
 
 var app = builder.Build();
 
