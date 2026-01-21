@@ -1,12 +1,14 @@
 ﻿using System.Data;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using VirtualRouletteApi.Data;
 using VirtualRouletteApi.Dtos;
+using VirtualRouletteApi.Hubs;
 
 namespace VirtualRouletteApi.Services.Jackpot;
 
-public class JackpotService(AppDbContext db) : IJackpotService
+public class JackpotService(AppDbContext db, IHubContext<JackpotHub> hub) : IJackpotService
 {
     public async Task<JackpotResponse> GetAsync(CancellationToken ct)
     {
@@ -63,7 +65,13 @@ public class JackpotService(AppDbContext db) : IJackpotService
         command.Parameters.Add(nowParam);
 
         var result = await command.ExecuteScalarAsync(ct);
-        return Convert.ToInt64(result);
+        var newAmount = Convert.ToInt64(result);
+        
+        await hub.Clients
+            .Group(JackpotHub.AuthorizedGroup)
+            .SendAsync("jackpotChanged", newAmount, ct);
+
+        return newAmount;
     }
 
 }
