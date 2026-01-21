@@ -2,11 +2,12 @@
 using VirtualRouletteApi.Data;
 using VirtualRouletteApi.Domain;
 using VirtualRouletteApi.Dtos;
+using VirtualRouletteApi.Services.Jackpot;
 using VirtualRouletteApi.Services.Roulette;
 
 namespace VirtualRouletteApi.Services.Bets;
 
-public class BetService(AppDbContext db, IRouletteService roulette) : IBetService
+public class BetService(AppDbContext db, IRouletteService roulette, IJackpotService jackpot) : IBetService
 {
     public async Task<BetResponse> MakeBetAsync(Guid userId, string betJson, string ipAddress, CancellationToken ct)
     {
@@ -24,6 +25,8 @@ public class BetService(AppDbContext db, IRouletteService roulette) : IBetServic
         }
         
         user.Balance -= betAmount;
+        
+        await jackpot.ChangeOnBetAsync(betAmount, ct);
         
         var winningNumber = roulette.GenerateWinningNumber();
         var winAmount = roulette.CalculateWin(betJson, winningNumber);
