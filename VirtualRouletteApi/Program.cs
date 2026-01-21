@@ -3,8 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using VirtualRouletteApi.Data;
 using VirtualRouletteApi.Domain;
 using VirtualRouletteApi.Extensions;
+using VirtualRouletteApi.Hubs;
 using VirtualRouletteApi.Services.Auth;
 using VirtualRouletteApi.Services.Balance;
+using VirtualRouletteApi.Services.Bets;
+using VirtualRouletteApi.Services.Jackpot;
 using VirtualRouletteApi.Services.Roulette;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +32,13 @@ builder.Services.AddScoped<IBalanceService, BalanceService>();
 
 //Betting
 builder.Services.AddSingleton<IRouletteService, RouletteService>();
+builder.Services.AddScoped<IBetService, BetService>();
+
+//Jackpot
+builder.Services.AddScoped<IJackpotService, JackpotService>();
+
+//SignalR
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -43,5 +53,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<JackpotHub>("/jackpot-hub");
 
 app.Run();

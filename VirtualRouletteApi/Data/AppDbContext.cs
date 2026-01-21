@@ -7,6 +7,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<Bet> Bets => Set<Bet>();
+    public DbSet<Jackpot> Jackpots => Set<Jackpot>();
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -17,5 +19,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<User>()
             .Property(u => u.UserName)
             .HasMaxLength(64);
+        
+        modelBuilder.Entity<Jackpot>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Amount);
+            e.Property(x => x.UpdatedAt);
+        });
     }
 }
