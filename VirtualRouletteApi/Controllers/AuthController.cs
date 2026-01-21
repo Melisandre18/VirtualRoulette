@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using VirtualRouletteApi.Dtos;
 using VirtualRouletteApi.Services.Auth;
 
@@ -35,4 +37,16 @@ public class AuthController(IAuthService auth) : ControllerBase
             _ => Unauthorized()
         };
     }
+    
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(CancellationToken ct)
+    {
+        var raw = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = Guid.Parse(raw!);
+
+        await auth.LogoutAsync(userId, ct);
+        return Ok();
+    }
+
 }

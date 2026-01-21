@@ -9,5 +9,8 @@ public class User
 
     public bool IsActive { get; set; } = true;
     
+    public DateTimeOffset LastSeen { get; set; } = DateTimeOffset.UtcNow;
+
+    
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

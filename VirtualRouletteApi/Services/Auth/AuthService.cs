@@ -40,7 +40,7 @@ public class AuthService(AppDbContext db, IPasswordHasher<User> passwordHasher) 
 
         var normalizedUserName = req.UserName.Trim();
 
-        var user = await db.Users.SingleOrDefaultAsync(u => u.UserName == normalizedUserName && u.IsActive, ct);
+        var user = await db.Users.SingleOrDefaultAsync(u => u.UserName == normalizedUserName, ct);
         if (user is null)
             return AuthResult<LoginResponse>.Fail(AuthError.InvalidCredentials, "Invalid username or password.");
 
@@ -48,8 +48,22 @@ public class AuthService(AppDbContext db, IPasswordHasher<User> passwordHasher) 
         if (verify == PasswordVerificationResult.Failed)
             return AuthResult<LoginResponse>.Fail(AuthError.InvalidCredentials, "Invalid username or password.");
         
+        user.IsActive = true;
+        user.LastSeen = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(ct);
+        
         return AuthResult<LoginResponse>.Ok(new LoginResponse("Valid credentials (Basic mode)."));
     }
+    
+    public async Task LogoutAsync(Guid userId, CancellationToken ct)
+    {
+        var user = await db.Users.SingleOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return;
+
+        user.IsActive = false;
+        await db.SaveChangesAsync(ct);
+    }
+
 
     private static bool IsValid(string userName, string password)
         => !string.IsNullOrWhiteSpace(userName) && !string.IsNullOrWhiteSpace(password);
