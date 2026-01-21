@@ -53,12 +53,27 @@ public class BasicAuthenticationHandler(
             return AuthenticateResult.Fail("Invalid Base64 credentials.");
         }
 
-        var user = await db.Users.SingleOrDefaultAsync(u => u.UserName == username && u.IsActive);
+        var user = await db.Users.SingleOrDefaultAsync(u => u.UserName == username);
         if (user is null) return AuthenticateResult.Fail("Invalid username or password.");
 
         var result = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
         if (result == PasswordVerificationResult.Failed)
             return AuthenticateResult.Fail("Invalid username or password.");
+        
+        var now = DateTimeOffset.UtcNow;
+
+        if (!user.IsActive)
+            return AuthenticateResult.Fail("User inactive");
+
+        if (now - user.LastSeen > TimeSpan.FromMinutes(5))
+        {
+            user.IsActive = false;
+            await db.SaveChangesAsync();
+            return AuthenticateResult.Fail("Session expired");
+        }
+        
+        user.LastSeen = now;
+        await db.SaveChangesAsync();
 
         var claims = new[]
         {

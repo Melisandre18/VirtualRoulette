@@ -39,6 +39,8 @@ builder.Services.AddScoped<IJackpotService, JackpotService>();
 
 //SignalR
 builder.Services.AddSignalR();
+builder.Services.AddHostedService<SignOutWorker>();
+
 
 var app = builder.Build();
 
@@ -47,6 +49,7 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
