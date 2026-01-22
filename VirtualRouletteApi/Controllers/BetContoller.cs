@@ -11,6 +11,12 @@ namespace VirtualRouletteApi.Controllers;
 [Authorize]
 public class BetController(IBetService bets) : ControllerBase
 {
+    /// <summary>
+    /// Places a bet for the current user
+    /// The bet JSON is validated by library.
+    /// </summary>
+    /// <response code="200">Bet processed (accepted or rejected)</response>
+    /// <response code="401">Not authenticated</response>
     [HttpPost]
     public async Task<ActionResult<BetResponse>> MakeBet(BetRequest req, CancellationToken ct)
     {
@@ -28,6 +34,12 @@ public class BetController(IBetService bets) : ControllerBase
         return Ok(result);
     }
     
+    /// <summary>
+    /// Returns bet history for the current user (newest first)
+    /// 'take' is capped server side to prevent large responses
+    /// </summary>
+    /// <response code="200">History returned</response>
+    /// <response code="401">Not authenticated</response>
     [HttpGet("history")]
     public async Task<ActionResult<IReadOnlyList<BetHistory>>> GetHistory([FromQuery] CancellationToken ct, int take = 50)
     {

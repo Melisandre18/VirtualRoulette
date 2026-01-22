@@ -11,6 +11,11 @@ namespace VirtualRouletteApi.Controllers;
 [Authorize]
 public class BalanceController(IBalanceService balance) : ControllerBase
 {
+    /// <summary>
+    /// Returns current user's balance
+    /// </summary>
+    /// <response code="200">Balance returned</response>
+    /// <response code="401">Not authenticated</response>
     [HttpGet]
     public async Task<ActionResult<BalanceResponse>> Get(CancellationToken ct)
     {
@@ -18,6 +23,12 @@ public class BalanceController(IBalanceService balance) : ControllerBase
         return Ok(await balance.GetAsync(userId, ct));
     }
     
+    /// <summary>
+    /// Deposits amount into the current user's balance
+    /// </summary>
+    /// <response code="200">Deposit applied</response>
+    /// <response code="400">Amount invalid</response>
+    /// <response code="401">Not authenticated</response>
     [HttpPost("deposit")]
     public async Task<ActionResult<BalanceResponse>> Deposit(
         BalanceChangeRequest req,
@@ -33,6 +44,13 @@ public class BalanceController(IBalanceService balance) : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Withdraws amount from the current user's balance
+    /// </summary>
+    /// <response code="200">Withdraw applied</response>
+    /// <response code="400">Amount invalid</response>
+    /// <response code="409">Insufficient balance</response>
+    /// <response code="401">Not authenticated</response>
     [HttpPost("withdraw")]
     public async Task<ActionResult<BalanceResponse>> Withdraw(
         BalanceChangeRequest req,

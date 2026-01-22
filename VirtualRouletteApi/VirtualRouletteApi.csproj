@@ -25,4 +25,9 @@
     </Reference>
   </ItemGroup>
 
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="signalrtest\package-lock.json" />
+    <_ContentIncludedByDefault Remove="signalrtest\package.json" />
+  </ItemGroup>
+
 </Project>

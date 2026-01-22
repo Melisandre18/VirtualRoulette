@@ -10,6 +10,10 @@ using VirtualRouletteApi.Infrastructure.Storage;
 
 namespace VirtualRouletteApi.Auth;
 
+/// <summary>
+/// Validates "Authorization: Basic" on each request
+/// Implements inactivity logout using User.IsActive + User.LastSeen
+/// </summary>
 public class BasicAuthenticationHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
@@ -63,7 +67,9 @@ public class BasicAuthenticationHandler(
             return AuthenticateResult.Fail("Invalid username or password.");
         
         var now = DateTimeOffset.UtcNow;
-
+        
+        // IsActive false means "logged out / inactive"
+        // LastSeen is a sliding window; if no activity for 5 minutes then expire the session
         if (!user.IsActive)
             return AuthenticateResult.Fail("User inactive");
 
