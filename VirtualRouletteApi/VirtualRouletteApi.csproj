@@ -30,4 +30,21 @@
     <_ContentIncludedByDefault Remove="signalrtest\package.json" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="VirtualRouletteApi.Tests\**\*.cs" />
+    <Compile Remove="VirtualRouletteApi.Tests\BasicFlowTest.cs" />
+    <Compile Remove="VirtualRouletteApi.Tests\TestAuth.cs" />
+    <Compile Remove="VirtualRouletteApi.Tests\BetAndJackpotTests.cs" />
+    <Compile Remove="VirtualRouletteApi.Tests\obj\JwtFlowTests.cs" />
+    <Compile Remove="VirtualRouletteApi.Tests\LogOutTests.cs" />
+    <Content Remove="VirtualRouletteApi.Tests\**\*" />
+    <None Remove="VirtualRouletteApi.Tests\**\*" />
+  </ItemGroup>
+
+
+
 </Project>

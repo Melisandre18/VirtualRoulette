@@ -121,3 +121,5 @@ app.MapControllers();
 app.MapHub<JackpotHub>("/jackpot-hub");
 
 app.Run();
+
+public partial class Program { }
