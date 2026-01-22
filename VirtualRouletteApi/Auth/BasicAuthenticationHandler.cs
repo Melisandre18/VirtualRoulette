@@ -1,20 +1,20 @@
 ﻿using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using VirtualRouletteApi.Data;
 using VirtualRouletteApi.Domain;
+using VirtualRouletteApi.Infrastructure.Storage;
 
 namespace VirtualRouletteApi.Auth;
 
 public class BasicAuthenticationHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
-    System.Text.Encodings.Web.UrlEncoder encoder,
-    AppDbContext db,
+    UrlEncoder encoder,
+    IUserStore users,
     IPasswordHasher<User> passwordHasher,
     IOptions<AuthOptions> authOptions
 ) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
@@ -53,7 +53,9 @@ public class BasicAuthenticationHandler(
             return AuthenticateResult.Fail("Invalid Base64 credentials.");
         }
 
-        var user = await db.Users.SingleOrDefaultAsync(u => u.UserName == username);
+        var ct = Context.RequestAborted;
+
+        var user = await users.FindByUserNameAsync(username, ct);
         if (user is null) return AuthenticateResult.Fail("Invalid username or password.");
 
         var result = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
@@ -68,12 +70,12 @@ public class BasicAuthenticationHandler(
         if (now - user.LastSeen > TimeSpan.FromMinutes(5))
         {
             user.IsActive = false;
-            await db.SaveChangesAsync();
+            await users.SaveAsync(ct);
             return AuthenticateResult.Fail("Session expired");
         }
         
         user.LastSeen = now;
-        await db.SaveChangesAsync();
+        await users.SaveAsync(ct);
 
         var claims = new[]
         {

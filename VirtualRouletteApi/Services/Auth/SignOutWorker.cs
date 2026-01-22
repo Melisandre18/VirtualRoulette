@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using VirtualRouletteApi.Data;
+﻿using VirtualRouletteApi.Infrastructure.Storage;
 
 namespace VirtualRouletteApi.Services.Auth;
 
@@ -11,19 +10,13 @@ public class SignOutWorker(IServiceScopeFactory scopes) : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            // Console.WriteLine($"[InactivityWorker] : {DateTimeOffset.UtcNow:O}");
             await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
 
             using var scope = scopes.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var sessions = scope.ServiceProvider.GetRequiredService<ISessionStore>();
 
             var cutoff = DateTimeOffset.UtcNow - Timeout;
-
-            await db.Users
-                .Where(u => u.IsActive && u.LastSeen < cutoff)
-                .ExecuteUpdateAsync(
-                    s => s.SetProperty(u => u.IsActive, false),
-                    stoppingToken);
+            await sessions.SignOutInactiveAsync(cutoff, stoppingToken);
         }
     }
 }

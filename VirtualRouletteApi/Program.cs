@@ -10,6 +10,7 @@ using VirtualRouletteApi.Services.Balance;
 using VirtualRouletteApi.Services.Bets;
 using VirtualRouletteApi.Services.Jackpot;
 using VirtualRouletteApi.Services.Roulette;
+using VirtualRouletteApi.Infrastructure.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,8 +39,15 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // EF Core + PostgreSQL
-builder.Services.AddDbContext<AppDbContext>(opts =>
-    opts.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
+var provider = (builder.Configuration["Storage:Provider"] ?? "Postgres").Trim();
+
+if (provider == "Postgres")
+{
+    builder.Services.AddDbContext<AppDbContext>(opts =>
+        opts.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
+}
+
+builder.Services.AddStorage(builder.Configuration);
 
 // Password hashing
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
@@ -76,6 +84,12 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+if (provider == "Postgres")
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated();
+}
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
