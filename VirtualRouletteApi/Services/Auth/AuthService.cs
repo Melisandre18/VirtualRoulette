@@ -1,11 +1,19 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
+using VirtualRouletteApi.Auth;
+using VirtualRouletteApi.Auth.Jwt;
 using VirtualRouletteApi.Domain;
 using VirtualRouletteApi.Dtos;
 using VirtualRouletteApi.Infrastructure.Storage;
 
 namespace VirtualRouletteApi.Services.Auth;
 
-public class AuthService(IUserStore users, IPasswordHasher<User> passwordHasher) : IAuthService
+public class AuthService(
+    IUserStore users,
+    IPasswordHasher<User> passwordHasher,
+    ITokenService tokenService,
+    IOptions<AuthOptions> authOptions
+) : IAuthService
 {
     public async Task<AuthResult<RegisterResponse>> RegisterAsync(RegisterRequest req, CancellationToken ct)
     {
@@ -51,7 +59,15 @@ public class AuthService(IUserStore users, IPasswordHasher<User> passwordHasher)
         user.LastSeen = DateTimeOffset.UtcNow;
         await users.SaveAsync(ct);
         
-        return AuthResult<LoginResponse>.Ok(new LoginResponse("Valid credentials (Basic mode)."));
+        var mode = authOptions.Value.Mode ?? "Basic";
+
+        if (string.Equals(mode, "Jwt", StringComparison.OrdinalIgnoreCase))
+        {
+            var token = tokenService.CreateToken(user, DateTimeOffset.UtcNow);
+            return AuthResult<LoginResponse>.Ok(new LoginResponse("JWT issued.", token));
+        }
+
+        return AuthResult<LoginResponse>.Ok(new LoginResponse("Valid credentials (Basic mode).", null));
     }
     
     public async Task LogoutAsync(Guid userId, CancellationToken ct)

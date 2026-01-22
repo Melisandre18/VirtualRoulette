@@ -12,6 +12,7 @@ using VirtualRouletteApi.Services.Jackpot;
 using VirtualRouletteApi.Services.Roulette;
 using VirtualRouletteApi.Infrastructure.Storage;
 using VirtualRouletteApi.Infrastructure.Errors;
+using VirtualRouletteApi.Auth.Jwt;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,10 +35,22 @@ builder.Services.AddSwaggerGen(c =>
         In = ParameterLocation.Header,
         Description = "Basic Authorization header."
     });
+    
+    c.AddSecurityDefinition("bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT Authorization header."
+    });
+
 
     c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
     {
-        [new OpenApiSecuritySchemeReference("basic", document)] = new List<string>()
+        [new OpenApiSecuritySchemeReference("basic", document)] = new List<string>(),
+        [new OpenApiSecuritySchemeReference("bearer", document)] = new List<string>()
     });
 });
 
@@ -58,6 +71,10 @@ builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 // Basic authentication + authorization
 builder.Services.AddAppAuthentication(builder.Configuration);
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+//Jwt
+builder.Services.AddSingleton<ITokenService, TokenService>();
+
 
 //Balance, Deposit, Withdraw
 builder.Services.AddScoped<IBalanceService, BalanceService>();
