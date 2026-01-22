@@ -1,12 +1,11 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using VirtualRouletteApi.Data;
 using VirtualRouletteApi.Domain;
 using VirtualRouletteApi.Dtos;
+using VirtualRouletteApi.Infrastructure.Storage;
 
 namespace VirtualRouletteApi.Services.Auth;
 
-public class AuthService(AppDbContext db, IPasswordHasher<User> passwordHasher) : IAuthService
+public class AuthService(IUserStore users, IPasswordHasher<User> passwordHasher) : IAuthService
 {
     public async Task<AuthResult<RegisterResponse>> RegisterAsync(RegisterRequest req, CancellationToken ct)
     {
@@ -15,7 +14,7 @@ public class AuthService(AppDbContext db, IPasswordHasher<User> passwordHasher) 
 
         var normalizedUserName = req.UserName.Trim();
 
-        var exists = await db.Users.AnyAsync(u => u.UserName == normalizedUserName, ct);
+        var exists = await users.UserNameExistsAsync(normalizedUserName, ct);
         if (exists)
             return AuthResult<RegisterResponse>.Fail(AuthError.UsernameTaken, "Username already exists.");
 
@@ -27,8 +26,8 @@ public class AuthService(AppDbContext db, IPasswordHasher<User> passwordHasher) 
 
         user.PasswordHash = passwordHasher.HashPassword(user, req.Password);
 
-        db.Users.Add(user);
-        await db.SaveChangesAsync(ct);
+        await users.AddAsync(user, ct);
+        await users.SaveAsync(ct);
 
         return AuthResult<RegisterResponse>.Ok(new RegisterResponse(user.Id, user.UserName));
     }
@@ -40,7 +39,7 @@ public class AuthService(AppDbContext db, IPasswordHasher<User> passwordHasher) 
 
         var normalizedUserName = req.UserName.Trim();
 
-        var user = await db.Users.SingleOrDefaultAsync(u => u.UserName == normalizedUserName, ct);
+        var user = await users.FindByUserNameAsync(normalizedUserName, ct);
         if (user is null)
             return AuthResult<LoginResponse>.Fail(AuthError.InvalidCredentials, "Invalid username or password.");
 
@@ -50,18 +49,18 @@ public class AuthService(AppDbContext db, IPasswordHasher<User> passwordHasher) 
         
         user.IsActive = true;
         user.LastSeen = DateTimeOffset.UtcNow;
-        await db.SaveChangesAsync(ct);
+        await users.SaveAsync(ct);
         
         return AuthResult<LoginResponse>.Ok(new LoginResponse("Valid credentials (Basic mode)."));
     }
     
     public async Task LogoutAsync(Guid userId, CancellationToken ct)
     {
-        var user = await db.Users.SingleOrDefaultAsync(u => u.Id == userId, ct);
+        var user = await users.FindByIdAsync(userId, ct);
         if (user is null) return;
 
         user.IsActive = false;
-        await db.SaveChangesAsync(ct);
+        await users.SaveAsync(ct);
     }
 
 

@@ -1,40 +1,41 @@
-﻿using Microsoft.EntityFrameworkCore;
-using VirtualRouletteApi.Data;
-using VirtualRouletteApi.Domain;
+﻿using VirtualRouletteApi.Domain;
 using VirtualRouletteApi.Dtos;
+using VirtualRouletteApi.Infrastructure.Storage;
 using VirtualRouletteApi.Services.Jackpot;
 using VirtualRouletteApi.Services.Roulette;
 
 namespace VirtualRouletteApi.Services.Bets;
 
-public class BetService(AppDbContext db, IRouletteService roulette, IJackpotService jackpot) : IBetService
+public class BetService(
+    IUserStore users,
+    IBalanceStore balances,
+    IBetStore bets,
+    IRouletteService roulette,
+    IJackpotService jackpot
+) : IBetService
 {
     public async Task<BetResponse> MakeBetAsync(Guid userId, string betJson, string ipAddress, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(betJson) || !roulette.ValidateBet(betJson, out var betAmount))
             return new BetResponse("rejected", Guid.Empty, 0, 0);
-        
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
-
-        var user = await db.Users.SingleAsync(u => u.Id == userId && u.IsActive, ct);
-
-        if (user.Balance < betAmount)
-        {
-            await tx.RollbackAsync(ct);
+        var user = await users.FindByIdAsync(userId, ct);
+        if (user is null || !user.IsActive)
             return new BetResponse("rejected", Guid.Empty, 0, 0);
-        }
+
+        var currentBalance = await balances.GetAsync(userId, ct);
+        if (currentBalance < betAmount)
+            return new BetResponse("rejected", Guid.Empty, 0, 0);
         
-        user.Balance -= betAmount;
+        await balances.SubtractAsync(userId, betAmount, ct);
         
         await jackpot.ChangeOnBetAsync(betAmount, ct);
         
         var winningNumber = roulette.GenerateWinningNumber();
         var winAmount = roulette.CalculateWin(betJson, winningNumber);
         
-        checked
-        {
-            user.Balance += winAmount;
-        }
+        if (winAmount > 0)
+            await balances.AddAsync(userId, winAmount, ct);
+
 
         var bet = new Bet
         {
@@ -43,32 +44,32 @@ public class BetService(AppDbContext db, IRouletteService roulette, IJackpotServ
             BetAmount = betAmount,
             WinningNumber = winningNumber,
             WinAmount = winAmount,
-            IpAddress = ipAddress
+            IpAddress = ipAddress,
+            CreatedAt = DateTimeOffset.UtcNow
         };
 
-        db.Bets.Add(bet);
-        await db.SaveChangesAsync(ct);
-        await tx.CommitAsync(ct);
+        await bets.AddAsync(bet, ct);
+        await users.SaveAsync(ct);
 
         return new BetResponse("accepted", bet.Id, winningNumber, winAmount);
     }
-    
+
     public async Task<IReadOnlyList<BetHistory>> GetHistoryAsync(Guid userId, int take, CancellationToken ct)
     {
         if (take <= 0) take = 10;
         if (take > 100) take = 100;
 
-        return await db.Bets
-            .AsNoTracking()
-            .Where(b => b.UserId == userId)
+        var history = await bets.GetHistoryAsync(userId, take, ct);
+
+        return history
             .OrderByDescending(b => b.CreatedAt)
+            .Take(take)
             .Select(b => new BetHistory(
                 b.Id,
                 b.BetAmount,
                 b.WinAmount,
                 b.CreatedAt
             ))
-            .Take(take)
-            .ToListAsync(ct);
+            .ToList();
     }
 }
