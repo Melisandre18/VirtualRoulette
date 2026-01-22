@@ -11,11 +11,15 @@ using VirtualRouletteApi.Services.Bets;
 using VirtualRouletteApi.Services.Jackpot;
 using VirtualRouletteApi.Services.Roulette;
 using VirtualRouletteApi.Infrastructure.Storage;
+using VirtualRouletteApi.Infrastructure.Errors;
+using VirtualRouletteApi.Auth.Jwt;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -31,10 +35,22 @@ builder.Services.AddSwaggerGen(c =>
         In = ParameterLocation.Header,
         Description = "Basic Authorization header."
     });
+    
+    c.AddSecurityDefinition("bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT Authorization header."
+    });
+
 
     c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
     {
-        [new OpenApiSecuritySchemeReference("basic", document)] = new List<string>()
+        [new OpenApiSecuritySchemeReference("basic", document)] = new List<string>(),
+        [new OpenApiSecuritySchemeReference("bearer", document)] = new List<string>()
     });
 });
 
@@ -56,6 +72,10 @@ builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddAppAuthentication(builder.Configuration);
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+//Jwt
+builder.Services.AddSingleton<ITokenService, TokenService>();
+
+
 //Balance, Deposit, Withdraw
 builder.Services.AddScoped<IBalanceService, BalanceService>();
 
@@ -72,6 +92,8 @@ builder.Services.AddHostedService<SignOutWorker>();
 
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -99,3 +121,5 @@ app.MapControllers();
 app.MapHub<JackpotHub>("/jackpot-hub");
 
 app.Run();
+
+public partial class Program { }

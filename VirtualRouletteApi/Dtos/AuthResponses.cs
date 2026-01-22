@@ -1,4 +1,5 @@
 ﻿namespace VirtualRouletteApi.Dtos;
 
 public record RegisterResponse(Guid Id, string UserName);
-public record LoginResponse(string Message);
+
+public record LoginResponse(string Message, string? Token);

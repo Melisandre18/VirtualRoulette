@@ -14,6 +14,14 @@ public class BetService(
     IJackpotService jackpot
 ) : IBetService
 {
+    /// <summary>
+    /// Makes a bet for a given user.
+    /// Returns response:
+    /// - Status: accepted/rejected
+    /// - SpinId: generated server-side (bet id)
+    /// - WinningNumber: 0..36
+    /// - WonAmount
+    /// </summary>
     public async Task<BetResponse> MakeBetAsync(Guid userId, string betJson, string ipAddress, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(betJson) || !roulette.ValidateBet(betJson, out var betAmount))
@@ -54,6 +62,10 @@ public class BetService(
         return new BetResponse("accepted", bet.Id, winningNumber, winAmount);
     }
 
+    /// <summary>
+    /// Returns the latest bet history for the user (newest first).
+    /// 'take' is bounded to avoid large payloads.
+    /// </summary>
     public async Task<IReadOnlyList<BetHistory>> GetHistoryAsync(Guid userId, int take, CancellationToken ct)
     {
         if (take <= 0) take = 10;

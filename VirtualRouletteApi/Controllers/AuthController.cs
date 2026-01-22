@@ -6,10 +6,27 @@ using VirtualRouletteApi.Services.Auth;
 
 namespace VirtualRouletteApi.Controllers;
 
+/// <summary>
+/// Authentication endpoints.
+/// Register creates a new user with a hashed password
+/// Login validates credentials and returns a Bearer token (Jwt)
+/// Logout marks the current user as inactive
+///
+/// Notes:
+/// In Basic mode, clients send credentials on each request.
+/// In JWT mode, clients use Bearer tokens.
+/// </summary>
+
 [ApiController]
 [Route("api/auth")]
 public class AuthController(IAuthService auth) : ControllerBase
 {
+    /// <summary>
+    /// Creates a new user account.
+    /// </summary>
+    /// <response code="201">User created</response>
+    /// <response code="400">Invalid input</response>
+    /// <response code="409">Username already exists</response>
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest req, CancellationToken ct)
     {
@@ -23,7 +40,14 @@ public class AuthController(IAuthService auth) : ControllerBase
             _ => BadRequest("Registration failed.")
         };
     }
-
+    
+    /// <summary>
+    /// Validates credentials.
+    /// In JWT mode the response contains a token, in Basic mode token is null
+    /// </summary>
+    /// <response code="200">Valid credentials</response>
+    /// <response code="400">Invalid input</response>
+    /// <response code="401">Invalid credentials</response>
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest req, CancellationToken ct)
     {
@@ -38,6 +62,11 @@ public class AuthController(IAuthService auth) : ControllerBase
         };
     }
     
+    /// <summary>
+    /// Logs out the current user , sets IsActive=false.
+    /// </summary>
+    /// <response code="204">Logged out</response>
+    /// <response code="401">Not authenticated</response>
     [Authorize]
     [HttpPost("logout")]
     public async Task<IActionResult> Logout(CancellationToken ct)
